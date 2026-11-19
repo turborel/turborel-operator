@@ -71,32 +71,3 @@ between different Turborel builds. Test that upgrade and its recovery
 path separately. The suite does not certify partition fencing, lost
 storage recovery, backup retention, CA rotation, storage drivers or
 long-running behavior under load.
-
-## Initial validation
-
-Validated on 20 November 2026 with Go 1.27.4, a three-node kind cluster
-running Kubernetes 1.35.0, and the Linux ARM64 Turborel image
-`ghcr.io/turborel/turborel:sha-3af6c384f44669b441e1c471bf7ac75705030d02`.
-
-The unit suite passed with race detection. Envtest passed against
-Kubernetes 1.33.0. golangci-lint reported no issues and govulncheck
-reported no vulnerabilities. The Helm chart passed lint, rendering and
-live installation with both namespace scopes; the scoped installation
-also ran two operator replicas with authenticated metrics enabled.
-
-The real-image suite passed TLS client connections, replica reads,
-writes after graceful removal of the current primary, rejoin over its
-original volume, and a complete rolling update with committed rows
-preserved. It also passed full and incremental backup verification,
-incremental restore, recovery to a named point before later commits,
-scheduled backups, retained PVCs, and encrypted backup and restore with
-HMAC-SHA-256 checksums. The replication scenario passed a second run.
-
-Two integration defects found by the suite are covered by those checks:
-the process manager must leave time for closed replication sockets to
-reach peers before the Pod network is removed, and global key options
-must precede Turborel's verify and restore commands.
-
-These results cover the tested platform and image. They are not a
-production qualification or evidence of compatibility with another
-Turborel build.

@@ -3,7 +3,7 @@
 ## Images and credentials
 
 Use an image containing both Turborel binaries, and keep its version
-fixed across the group. The current examples use
+fixed across the group. The checked-in manifests use
 `ghcr.io/turborel/turborel:sha-3af6c384f44669b441e1c471bf7ac75705030d02`.
 The corresponding registry digest observed during testing is
 `sha256:fac2c9e50658f3031fe82b32a165b37d7a682b91b43ce98aa80df89e02ae4d95`.
@@ -20,9 +20,44 @@ database. Coordinate password changes through SQL; mismatched owner
 credentials stop readiness and administrative operations. Prefer
 application users with their own privileges to using the owner.
 
+## Connections
+
+For a Cluster named `example` in `databases`, these services listen on
+port 7422:
+
+| Service | Where a connection goes |
+|---|---|
+| `example-rw.databases.svc` | the primary |
+| `example-ro.databases.svc` | a ready replica; empty for a standalone cluster |
+| `example-r.databases.svc` | any ready member |
+
+Use the `turborel` client or Turborel's client library. TCP connections
+require TLS and the public CA certificate from Secret `example-ca`.
+Replicas serve reads and refuse writes. Applications must reconnect
+after a primary change.
+
+To connect from your machine, save the CA certificate and forward the
+write service:
+
+```sh
+kubectl -n databases get secret example-ca \
+  -o jsonpath='{.data.ca\.crt}' | base64 --decode > example-ca.pem
+kubectl -n databases port-forward service/example-rw 7422:7422
+```
+
+In another terminal, run the local Turborel client:
+
+```sh
+turborel --host 127.0.0.1 --port 7422 --user admin --password \
+  --tls example-ca.pem --server-name example-rw.databases.svc
+```
+
+`--password` prompts without echo. The server name matches the service
+certificate while the connection travels through the local port.
+
 ## Storage and deletion
 
-A member's PVC has its Pod's name, such as `main-1`. Only increasing
+A member's PVC has its Pod's name, such as `example-1`. Only increasing
 `spec.storage.size` is supported, and the storage class must allow
 expansion. Never remove a database PVC to request a restart: delete the
 Pod and let the controller reuse its volume instead.
@@ -122,10 +157,10 @@ outside the archive's coverage must fail, not return a partial restore.
 ## Inspecting failures
 
 ```sh
-kubectl get cluster main -o yaml
-kubectl describe pod main-1
-kubectl logs main-1 -c database
-kubectl get backup main-full -o yaml
+kubectl get cluster example -o yaml
+kubectl describe pod example-1
+kubectl logs example-1 -c database
+kubectl get backup example-full -o yaml
 ```
 
 An image, volume, owner Secret or TLS failure prevents readiness.

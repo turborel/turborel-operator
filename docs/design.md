@@ -1,8 +1,8 @@
-# Design and research
+# Design
 
-The operator is built around Turborel's server, not PostgreSQL's
-management commands. This first API keeps the replica group fixed and
-lets the database's consensus protocol choose its primary.
+The operator uses Turborel's native replication and backup operations.
+This first API keeps the replica group fixed and lets the database's
+consensus protocol choose its primary.
 
 The implementation was checked against Turborel commit
 `3af6c384f44669b441e1c471bf7ac75705030d02`, its published image, the
@@ -10,54 +10,23 @@ The implementation was checked against Turborel commit
 of `turboreld`, the CLI and the replication server. Because Turborel is
 in alpha, an operator release must name the database builds it tests.
 
-## What the database provides
+## Pod management
 
-| Turborel facility | What the operator does with it |
-|---|---|
-| Viewstamped Replication, durable majority commits and native elections | Gives each member a stable number, DNS name and independent PVC; observes elections through `INFORMATION_SCHEMA.REPLICAS` |
-| Replica reads and `REPLICATION.READ_AFTER` | Provides separate read services; read-after-write positions remain the client's responsibility |
-| `--owner` for a new replica group | Authorizes it only on initial storage; records PVC identities before starting Pods and writes a bootstrap marker on each volume |
-| `user add NAME --owner` for a standalone database | Creates the database in a staging directory, then renames it into place before serving |
-| TLS, SCRAM and mutual TLS for replication | Requires client TLS, keeps credentials in Secrets and issues the replica certificates from a cluster CA |
-| Full and incremental `BACKUP DATABASE` | Runs the native client in a Job against the primary, with a unique label and an explicit incremental parent |
-| `--verify-backup`, `--restore`, archive recovery and restore points | Verifies the exact resulting backup ID, and restores into new standalone clusters |
-| LZ4, AES-256-GCM, ChaCha20-Poly1305 and keyed checksums | Mounts key files from Secrets and passes their settings to Turborel |
-| Memory budgets, spill, storage engines, vector, full-text and graph indexes | Leaves SQL facilities to the database; exposes engine settings without inventing Kubernetes resources for tables or indexes |
-| Pluggable backup targets | Starts with directory targets on a shared PVC; does not assume an S3 provider is present |
-| Structured diagnostics and graceful SIGTERM handling | Keeps the server's logs on stderr and forwards shutdown with time to drain |
-
-These choices follow the manuals for
-[replication](https://turborel.com/docs/operator/replication/),
-[backups](https://turborel.com/docs/operator/backups/),
-[encryption](https://turborel.com/docs/operator/encryption/),
-[settings](https://turborel.com/docs/operator/settings/),
-[networking](https://turborel.com/docs/operator/network/) and
-[diagnostics](https://turborel.com/docs/operator/diagnostics/).
-
-## What carries over from CloudNativePG
-
-CloudNativePG's useful Kubernetes conventions carry over: independent
-storage for each member, separate read and write services, a process
-manager in each Pod, and updates that replace replicas before the
-primary. Its
-[architecture](https://cloudnative-pg.io/docs/current/architecture/),
-[instance manager](https://cloudnative-pg.io/docs/current/instance_manager/)
-and [rolling update](https://cloudnative-pg.io/docs/current/rolling_update/)
-documentation informed those choices.
+Each member has independent storage, a process manager and separate
+services for reads and writes. Updates replace replicas before the
+primary.
 
 The operator manages Pods directly. A StatefulSet's automatic rollout
 would make update decisions outside the controller's checks for
 healthy members and active backups. A stable Pod name and retained PVC
 provide the member identity without delegating that rollout.
 
-The important difference is election authority. Turborel already
-implements it. The operator neither promotes a member by guessing nor
-makes Kubernetes leader-election Leases part of database consensus.
-The operator's Lease only prevents two controllers from making changes
-at once.
+Turborel's consensus protocol chooses the primary. Kubernetes
+leader-election Leases coordinate the operator's controllers; they
+are not part of database consensus.
 
-This is a smaller initial feature set. It does not implement online
-membership changes, controlled switchovers, cross-cluster replica
+The initial API does not implement online membership changes,
+controlled switchovers, cross-cluster replica
 topologies, connection pooling, object-store providers, snapshot
 backups, automatic retention or declarative SQL users and databases.
 Those need their own protocols and tests before they can be added.
