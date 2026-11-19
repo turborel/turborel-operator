@@ -1,0 +1,9 @@
+# main needs spec.backup.claimName pointing at an existing RWX PVC first.
+apiVersion: database.turborel.com/v1alpha1
+kind: Backup
+metadata:
+  name: main-full
+spec:
+  clusterName: main
+  verify: true
+  deadlineSeconds: 3600
