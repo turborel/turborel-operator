@@ -1,0 +1,19 @@
+name: Test
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.1.0
+        with:
+          go-version: '1.27.4'
+      - run: make test test-integration security
+      - name: Check generated Go files and module metadata
+        run: |
+          go mod tidy
+          git diff --exit-code -- api go.mod go.sum

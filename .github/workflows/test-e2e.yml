@@ -1,0 +1,37 @@
+name: End to end
+on:
+  workflow_dispatch:
+    inputs:
+      database_image:
+        description: Turborel image to test
+        default: ghcr.io/turborel/turborel:sha-3af6c384f44669b441e1c471bf7ac75705030d02
+        required: true
+      charts_ref:
+        description: turborel/charts ref containing the operator chart
+        default: main
+        required: true
+permissions:
+  contents: read
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: operator
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: turborel/charts
+          ref: ${{ inputs.charts_ref }}
+          path: charts
+      - uses: actions/setup-go@v7.1.0
+        with:
+          go-version: '1.27.4'
+      - name: Install kind
+        run: go install sigs.k8s.io/kind@v0.31.0
+      - name: Test against the requested database image
+        working-directory: operator
+        env:
+          TURBOREL_IMAGE: ${{ inputs.database_image }}
+        run: make test-e2e
