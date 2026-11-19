@@ -8,7 +8,7 @@ CONTROLLER_TOOLS_VERSION := v0.18.0
 ENVTEST_VERSION := release-0.21
 ENVTEST_K8S_VERSION ?= 1.33.0
 
-.PHONY: security all build fmt vet generate manifests test test-integration docker-build docker-push chart tools setup-envtest
+.PHONY: security all build fmt vet generate manifests test test-integration test-e2e docker-build docker-push chart tools setup-envtest
 all: build
 
 build: generate manifests fmt vet
@@ -32,6 +32,10 @@ test: generate manifests vet
 
 test-integration: generate manifests setup-envtest
 	KUBEBUILDER_ASSETS="$$($(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test -race -tags=integration -count=1 ./api/...
+
+# Uses its own kind cluster and kubeconfig. TURBOREL_IMAGE must name a local image.
+test-e2e: generate manifests
+	./hack/e2e.sh
 
 docker-build:
 	docker build -t $(IMG) .
