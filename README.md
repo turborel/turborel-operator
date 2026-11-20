@@ -66,7 +66,7 @@ helm install turborel-operator turborel/turborel-operator \
   --namespace turborel-system --create-namespace
 ```
 
-To try this on your machine, see the [kind installation guide](docs/testing.md#local-kind-installation).
+To try this on your machine, see the [kind installation guide](doc/testing.md#local-kind-installation).
 
 Create the database owner's credentials, replacing `change-me` with
 your password:
@@ -102,7 +102,7 @@ kubectl -n databases wait cluster/example --for=condition=Ready --timeout=5m
 This creates one server. For three replicas, add `instances: 3` before
 creating the Cluster; the default placement needs three worker nodes.
 The instance count is fixed after creation. See the
-[API reference](docs/reference.md) for settings and other options.
+[API reference](doc/reference.md) for settings and other options.
 
 ## Connecting
 
@@ -117,7 +117,7 @@ Enter the password you chose above, then run SQL. Type `\q` to exit.
 The client is included in the database image.
 
 Applications connect to `example-rw.databases.svc:7422` with the
-Turborel client. See [connections](docs/operations.md#connections) for
+Turborel client. See [connections](doc/operations.md#connections) for
 TLS, read services and access from your machine.
 
 ## Backups and restore
@@ -204,7 +204,7 @@ log archiving under `CLUSTER_UID/archive`. Add that relative path as
 target, recovery follows the archive to its end.
 
 There is no automatic backup retention or built-in S3 provider here.
-See [operations](docs/operations.md) for storage, encryption and recovery
+See [operations](doc/operations.md) for storage, encryption and recovery
 limits.
 
 ## Development
@@ -213,10 +213,10 @@ limits.
 make build             # generate APIs and manifests, check, compile
 make test              # unit tests and the race detector
 make test-integration  # CRDs against a real local API server
-make test-e2e          # a separate kind cluster; see docs/testing.md
+make test-e2e          # a separate kind cluster; see doc/testing.md
 ```
 
-The [testing guide](docs/testing.md) gives the image and tooling needed
+The [testing guide](doc/testing.md) gives the image and tooling needed
 for the end-to-end suite. To run the controller outside Kubernetes,
 set `OPERATOR_IMAGE` to an image the cluster can pull, then run
 `go run ./cmd`. `WATCH_NAMESPACE` limits the watch to one namespace;

@@ -1,4 +1,6 @@
-# API reference
+# API Reference
+
+[Contents](README.md)
 
 All three resources are namespaced and use
 `apiVersion: database.turborel.com/v1alpha1`. Secret, PVC and resource
