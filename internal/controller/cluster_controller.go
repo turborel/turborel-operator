@@ -35,8 +35,9 @@ import (
 // ClusterReconciler manages storage, identities and Pods; Turborel owns elections.
 type ClusterReconciler struct {
 	client.Client
-	Scheme        *runtime.Scheme
-	OperatorImage string
+	Scheme                  *runtime.Scheme
+	OperatorImage           string
+	OperatorImagePullPolicy corev1.PullPolicy
 	// Inspect is injectable for deterministic reconciliation tests.
 	Inspect func(context.Context, *db.Cluster, *corev1.Pod, map[string][]byte) (instance.Status, error)
 }
@@ -403,7 +404,7 @@ func (r *ClusterReconciler) observeMembers(
 		if err := r.ensureConfig(ctx, c, name, cfg); err != nil {
 			return nil, nil, nil, err
 		}
-		want := desiredPod(c, n, r.OperatorImage, secretsHash)
+		want := desiredPod(c, n, r.OperatorImage, secretsHash, r.OperatorImagePullPolicy)
 		if err := controllerutil.SetControllerReference(c, want, r.Scheme); err != nil {
 			return nil, nil, nil, err
 		}

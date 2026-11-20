@@ -25,8 +25,9 @@ import (
 
 type BackupReconciler struct {
 	client.Client
-	Scheme        *runtime.Scheme
-	OperatorImage string
+	Scheme                  *runtime.Scheme
+	OperatorImage           string
+	OperatorImagePullPolicy corev1.PullPolicy
 }
 
 func (r *BackupReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, retErr error) {
@@ -123,7 +124,7 @@ func (r *BackupReconciler) createBackupJob(
 	if err != nil {
 		return nil, err
 	}
-	spec := basePod(c, r.OperatorImage)
+	spec := basePod(c, r.OperatorImage, r.OperatorImagePullPolicy)
 	spec.RestartPolicy = corev1.RestartPolicyNever
 	container := baseContainer(c)
 	container.Name = "backup"

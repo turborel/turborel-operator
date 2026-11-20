@@ -6,6 +6,15 @@ The examples use `ghcr.io/turborel/turborel:nightly`, which contains
 both the server and command-line client. The operator uses the separate
 `ghcr.io/turborel/turborel-operator:nightly` image.
 
+Nightly images are pulled when a container starts. A tag moving in the
+registry does not itself restart healthy Pods. Use a commit tag or
+digest when you need every restart to use the same build.
+
+The chart's `image.pullPolicy` also controls the instance-manager init
+containers in database Pods and backup Jobs. For images loaded directly
+into kind, set it to `IfNotPresent`. When running the operator outside
+Kubernetes, `OPERATOR_IMAGE_PULL_POLICY` provides the same override.
+
 For a private registry, set `Cluster.spec.imagePullSecrets` to Secrets
 in the database namespace. They apply to the database, instance-manager
 init container and backup Jobs. The chart's `imagePullSecrets` applies

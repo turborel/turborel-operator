@@ -90,7 +90,17 @@ func podSecurityContext() *corev1.PodSecurityContext {
 		FSGroup: ptr.To(int64(65532)), FSGroupChangePolicy: ptr.To(corev1.FSGroupChangeOnRootMismatch),
 		SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault}}
 }
-func basePod(c *db.Cluster, operatorImage string) corev1.PodSpec {
+func imagePullPolicy(image string) corev1.PullPolicy {
+	if strings.HasSuffix(image, ":nightly") || strings.HasSuffix(image, ":latest") {
+		return corev1.PullAlways
+	}
+	return corev1.PullIfNotPresent
+}
+
+func basePod(c *db.Cluster, operatorImage string, operatorPullPolicy corev1.PullPolicy) corev1.PodSpec {
+	if operatorPullPolicy == "" {
+		operatorPullPolicy = imagePullPolicy(operatorImage)
+	}
 	return corev1.PodSpec{
 		AutomountServiceAccountToken: ptr.To(false), SecurityContext: podSecurityContext(),
 		TerminationGracePeriodSeconds: ptr.To(int64(60)), ImagePullSecrets: c.Spec.ImagePullSecrets,
@@ -101,14 +111,14 @@ func basePod(c *db.Cluster, operatorImage string) corev1.PodSpec {
 			{Name: "tmp", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 			secretVolume("tls", c.Name+"-tls"), secretVolume("owner", c.Spec.OwnerSecret),
 		},
-		InitContainers: []corev1.Container{{Name: "install-agent", Image: operatorImage, ImagePullPolicy: corev1.PullIfNotPresent,
+		InitContainers: []corev1.Container{{Name: "install-agent", Image: operatorImage, ImagePullPolicy: operatorPullPolicy,
 			Command: []string{"/manager", "instance", "install", "/agent/manager"}, SecurityContext: securityContext(),
 			Resources:    corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceCPU: quantity("10m"), corev1.ResourceMemory: quantity("32Mi")}},
 			VolumeMounts: []corev1.VolumeMount{{Name: "agent", MountPath: "/agent"}}}},
 	}
 }
 func baseContainer(c *db.Cluster) corev1.Container {
-	container := corev1.Container{Name: "database", Image: c.Spec.Image, ImagePullPolicy: corev1.PullIfNotPresent,
+	container := corev1.Container{Name: "database", Image: c.Spec.Image, ImagePullPolicy: imagePullPolicy(c.Spec.Image),
 		Command: []string{"/agent/manager", "instance", "run"}, SecurityContext: securityContext(), Resources: c.Spec.Resources,
 		VolumeMounts: []corev1.VolumeMount{{Name: "agent", MountPath: "/agent", ReadOnly: true}, {Name: "run", MountPath: "/run/turborel"},
 			{Name: "tmp", MountPath: "/tmp"}, {Name: "tls", MountPath: instance.TLSDir, ReadOnly: true},
@@ -121,9 +131,9 @@ func addKeys(c *db.Cluster, spec *corev1.PodSpec, container *corev1.Container) {
 		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{Name: "keys", MountPath: instance.KeysDir, ReadOnly: true})
 	}
 }
-func desiredPod(c *db.Cluster, n int32, operatorImage, secretHash string) *corev1.Pod {
+func desiredPod(c *db.Cluster, n int32, operatorImage, secretHash string, operatorPullPolicy corev1.PullPolicy) *corev1.Pod {
 	name := memberName(c, n)
-	spec := basePod(c, operatorImage)
+	spec := basePod(c, operatorImage, operatorPullPolicy)
 	spec.Hostname = name
 	spec.Subdomain = c.Name + "-instances"
 	spec.Volumes = append(spec.Volumes, claimVolume("data", name), corev1.Volume{Name: "config",

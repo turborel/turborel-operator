@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -67,11 +68,12 @@ func runInstance(args []string) error {
 	}
 }
 func runManager() error {
-	var metricsAddress, probeAddress, operatorImage, namespace string
+	var metricsAddress, probeAddress, operatorImage, operatorPullPolicy, namespace string
 	var leaderElection, secureMetrics bool
 	flag.StringVar(&metricsAddress, "metrics-bind-address", "0", "Metrics address; 0 disables metrics")
 	flag.StringVar(&probeAddress, "health-probe-bind-address", ":8081", "Manager health address")
 	flag.StringVar(&operatorImage, "operator-image", os.Getenv("OPERATOR_IMAGE"), "Image containing this manager and instance binary")
+	flag.StringVar(&operatorPullPolicy, "operator-image-pull-policy", os.Getenv("OPERATOR_IMAGE_PULL_POLICY"), "Instance-manager image pull policy; empty follows its tag")
 	flag.StringVar(&namespace, "watch-namespace", os.Getenv("WATCH_NAMESPACE"), "Namespace to watch; empty watches all")
 	flag.BoolVar(&leaderElection, "leader-elect", true, "Enable manager leader election")
 	flag.BoolVar(&secureMetrics, "metrics-secure", true, "Protect metrics with TLS and Kubernetes authorization")
@@ -81,6 +83,12 @@ func runManager() error {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 	if operatorImage == "" {
 		return fmt.Errorf("operator-image or OPERATOR_IMAGE is required")
+	}
+	policy := corev1.PullPolicy(operatorPullPolicy)
+	switch policy {
+	case "", corev1.PullAlways, corev1.PullIfNotPresent, corev1.PullNever:
+	default:
+		return fmt.Errorf("invalid operator image pull policy %q", operatorPullPolicy)
 	}
 	scheme := runtime.NewScheme()
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
@@ -98,10 +106,10 @@ func runManager() error {
 	if err != nil {
 		return err
 	}
-	if err := (&controller.ClusterReconciler{Client: manager.GetClient(), Scheme: scheme, OperatorImage: operatorImage}).SetupWithManager(manager); err != nil {
+	if err := (&controller.ClusterReconciler{Client: manager.GetClient(), Scheme: scheme, OperatorImage: operatorImage, OperatorImagePullPolicy: policy}).SetupWithManager(manager); err != nil {
 		return err
 	}
-	if err := (&controller.BackupReconciler{Client: manager.GetClient(), Scheme: scheme, OperatorImage: operatorImage}).SetupWithManager(manager); err != nil {
+	if err := (&controller.BackupReconciler{Client: manager.GetClient(), Scheme: scheme, OperatorImage: operatorImage, OperatorImagePullPolicy: policy}).SetupWithManager(manager); err != nil {
 		return err
 	}
 	if err := (&controller.ScheduledBackupReconciler{Client: manager.GetClient(), Scheme: scheme}).SetupWithManager(manager); err != nil {
