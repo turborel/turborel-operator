@@ -1,5 +1,7 @@
 # Operations
 
+[Contents](README.md)
+
 ## Images and credentials
 
 The examples use `ghcr.io/turborel/turborel:nightly`, which contains

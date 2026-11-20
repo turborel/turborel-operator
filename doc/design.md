@@ -1,5 +1,7 @@
 # Design
 
+[Contents](README.md)
+
 The operator uses Turborel's native replication and backup operations.
 This first API keeps the replica group fixed and lets the database's
 consensus protocol choose its primary.
