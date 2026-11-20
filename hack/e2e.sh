@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export KIND_CLUSTER="${KIND_CLUSTER:-turborel-operator-e2e-$$}"
-export TURBOREL_IMAGE="${TURBOREL_IMAGE:-ghcr.io/turborel/turborel:sha-3af6c384f44669b441e1c471bf7ac75705030d02}"
+export TURBOREL_IMAGE="${TURBOREL_IMAGE:-ghcr.io/turborel/turborel:nightly}"
 CHART_DIR="${CHART_DIR:-../charts/charts/turborel-operator}"
 OPERATOR_TEST_IMAGE="turborel-operator:e2e-$$"
 for tool in docker kind kubectl helm python3 rg; do command -v "$tool" >/dev/null; done
@@ -43,7 +43,11 @@ kubectl taint node "$KIND_CLUSTER-control-plane" node-role.kubernetes.io/control
 kubectl -n kube-system rollout status daemonset/kube-proxy --timeout=120s
 # Save only the local platform: pulling one architecture of a multiarch index
 # leaves other index entries unavailable to kind's default image importer.
-docker image inspect "$TURBOREL_IMAGE" >/dev/null 2>&1 || docker pull "$TURBOREL_IMAGE"
+if [[ "$TURBOREL_IMAGE" == *:nightly ]]; then
+  docker pull "$TURBOREL_IMAGE"
+else
+  docker image inspect "$TURBOREL_IMAGE" >/dev/null 2>&1 || docker pull "$TURBOREL_IMAGE"
+fi
 image_platform="$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$TURBOREL_IMAGE")"
 docker image save --platform="$image_platform" -o "$TEST_RUN_DIR/database.tar" "$TURBOREL_IMAGE"
 kind load image-archive "$TEST_RUN_DIR/database.tar" --name "$KIND_CLUSTER"
@@ -51,5 +55,5 @@ docker build -t "$OPERATOR_TEST_IMAGE" .
 kind load docker-image "$OPERATOR_TEST_IMAGE" --name "$KIND_CLUSTER"
 kubectl apply --server-side -f .test/crds/
 helm install operator "$CHART_DIR" --namespace turborel-system --create-namespace \
-  --set image.repository=turborel-operator --set image.tag="e2e-$$" --wait --timeout=120s
+  --set image.repository=turborel-operator --set image.tag="e2e-$$" --set image.pullPolicy=IfNotPresent --wait --timeout=120s
 python3 hack/e2e.py

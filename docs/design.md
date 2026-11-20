@@ -4,12 +4,6 @@ The operator uses Turborel's native replication and backup operations.
 This first API keeps the replica group fixed and lets the database's
 consensus protocol choose its primary.
 
-The implementation was checked against Turborel commit
-`3af6c384f44669b441e1c471bf7ac75705030d02`, its published image, the
-[operator manual](https://turborel.com/docs/operator/), and the source
-of `turboreld`, the CLI and the replication server. Because Turborel is
-in alpha, an operator release must name the database builds it tests.
-
 ## Pod management
 
 Each member has independent storage, a process manager and separate

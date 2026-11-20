@@ -8,7 +8,7 @@ import time
 import uuid
 
 NAMESPACE = os.environ.get("TEST_NAMESPACE", "turborel-e2e")
-IMAGE = os.environ.get("TURBOREL_IMAGE", "ghcr.io/turborel/turborel:sha-3af6c384f44669b441e1c471bf7ac75705030d02")
+IMAGE = os.environ.get("TURBOREL_IMAGE", "ghcr.io/turborel/turborel:nightly")
 KIND_CLUSTER = os.environ.get("KIND_CLUSTER", "turborel-operator-e2e")
 API = "database.turborel.com/v1alpha1"
 HA_NAME = os.environ.get("TEST_CLUSTER", "ha")

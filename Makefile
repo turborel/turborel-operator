@@ -1,4 +1,4 @@
-IMG ?= ghcr.io/turborel/turborel-operator:dev
+IMG ?= ghcr.io/turborel/turborel-operator:nightly
 CHART_DIR ?= ../charts/charts/turborel-operator
 LOCALBIN := $(CURDIR)/bin
 CONTROLLER_GEN := $(LOCALBIN)/controller-gen

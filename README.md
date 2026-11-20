@@ -66,6 +66,8 @@ helm install turborel-operator turborel/turborel-operator \
   --namespace turborel-system --create-namespace
 ```
 
+To try this on your machine, see the [kind installation guide](docs/testing.md#local-kind-installation).
+
 Create the database owner's credentials, replacing `change-me` with
 your password:
 

@@ -3,7 +3,7 @@ kind: Cluster
 metadata:
   name: example
 spec:
-  image: ghcr.io/turborel/turborel:sha-3af6c384f44669b441e1c471bf7ac75705030d02
+  image: ghcr.io/turborel/turborel:nightly
   instances: 1
   ownerSecret: example-owner
   storage:

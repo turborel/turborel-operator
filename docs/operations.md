@@ -2,11 +2,9 @@
 
 ## Images and credentials
 
-Use an image containing both Turborel binaries, and keep its version
-fixed across the group. The checked-in manifests use
-`ghcr.io/turborel/turborel:sha-3af6c384f44669b441e1c471bf7ac75705030d02`.
-The corresponding registry digest observed during testing is
-`sha256:fac2c9e50658f3031fe82b32a165b37d7a682b91b43ce98aa80df89e02ae4d95`.
+The examples use `ghcr.io/turborel/turborel:nightly`, which contains
+both the server and command-line client. The operator uses the separate
+`ghcr.io/turborel/turborel-operator:nightly` image.
 
 For a private registry, set `Cluster.spec.imagePullSecrets` to Secrets
 in the database namespace. They apply to the database, instance-manager
